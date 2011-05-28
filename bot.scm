@@ -55,17 +55,18 @@
   (if (char=? (string-ref message 0) #\!) (handle-command name host channel message)))
 
 (define (handle-command name host channel message)
-  (define args (str-split message #\space))
-  (define index 0)
+  (define index (string-length message))
   (letrec ((crawler (lambda (i)
       (if (char=? (string-ref message i) #\space)
         (set! index i)
         (if (> (string-length message) (+ i 1)) (crawler (+ i 1)))))))
     (crawler 0))
-  (define command
-    (substring message 0 index))
+  (set! message (string-append message " ")) ; this whole parsing block is dumb and I need to fix it
+  (define command (substring message 0 index))
+  (display command)
   (define raw (substring message (+ 1 (string-length command)) (string-length message)))
   (if (string=? command "!say") (privmsg channel raw))
+  (if (string=? command "!play") (privmsg channel "PLAYAN"))
   (if (string=? command "!eval") (if (string=? host "~Sl@ck.ware") (if (string=? name "slacky") (privmsg channel (eval (read (open-input-string raw)) user-initial-environment)))))
 )
 

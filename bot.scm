@@ -4,7 +4,8 @@
 (define HOSTNAME "irc.rizon.net")
 (define PORT 6667)
 (define NICKNAME "schemebot")
-(define CHAN "#perwl")
+(define CHAN "#x86")
+(define riders (make-string-hash-table))
 
 (define io
   (open-tcp-stream-socket HOSTNAME PORT))
@@ -32,7 +33,6 @@
         (re-match-extract line r 4)))))
 
 (define (out string)
-;  (display (format #f "OUT: ~A" string))
   (write-string string io)
   (flush-output io))
 
@@ -52,13 +52,23 @@
   (out (format #f "PRIVMSG ~A :~A~%" dest text)))
 
 (define (handle-message name host channel message)
-  (if (char=? (string-ref message 0) #\!) (handle-command name host channel message)))
+  (if (char=? (string-ref message 0) #\!) (handle-command name host channel message) (handle-text name host channel message)))
 
 (define (handle-text name host channel message)
-  (display message) (newline)
-  (let ((r (re-string-match "v=\\(.*\\)" message)))
-    (and r
-      (display (re-match-extract message r 1)))))
+  (if
+    (<
+      (-
+        (real-time-clock)
+        (hash-table/get riders name 0))
+      1000)
+    (privmsg channel "YOU ARE RIDING TOO FAST!  SLOW DOWN!"))
+  (hash-table/put! riders name (real-time-clock)))
+
+(define (startgame channel name)
+  (privmsg channel "TODO: A DRAGON EATS YOU"))
+
+(define (roll channel name)
+  (privmsg channel "TODO: A DRAGON EATS YOU"))
 
 (define (handle-command name host channel message)
   (define index (string-length message))
@@ -68,10 +78,9 @@
         (if (> (string-length message) (+ i 1)) (crawler (+ i 1)))))))
     (crawler 0))
   (define command (substring message 0 index))
-  (display command)
   (define raw (if (< (string-length command) (string-length message)) (substring message (+ 1 (string-length command)) (string-length message)) '()))
-;  (if (string=? command "!say") (privmsg channel raw))
-;  (if (string=? command "!play") (privmsg channel "PLAYAN"))
+;  (if (string=? command "!play") (startgame channel name))
+;  (if (string=? command "!roll") (roll channel name))
   (if (string=? command "!eval") (if (string=? host "~Sl@ck.ware") (if (string=? name "slacky") (eval (read (open-input-string raw)) user-initial-environment))))
 )
 
